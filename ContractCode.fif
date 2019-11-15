@@ -1,13 +1,31 @@
 "Asm.fif" include
 // automatically generated from `/home/rainydio/work/ton/crypto/smartcont/stdlib.fc` `ContractCode.fc` 
 PROGRAM{
+  DECLPROC uint_bitcount
   DECLPROC ~orders_delete_get_order_slice
   DECLPROC ~orders_set_order_builder
+  DECLPROC execute_order?
   DECLPROC ~load_order
   DECLPROC store_order
   DECLPROC recv_internal
   DECLPROC recv_external
   85143 DECLMETHOD seqno
+  uint_bitcount PROC:<{
+    0 PUSHINT
+    WHILE:<{
+      OVER
+      0 NEQINT
+    }>DO<{
+      OVER
+      1 PUSHINT
+      AND
+      ADD
+      SWAP
+      1 RSHIFT#
+      SWAP
+    }>
+    NIP
+  }>
   ~orders_delete_get_order_slice PROC:<{
     SWAP
     32 PUSHINT
@@ -18,6 +36,27 @@ PROGRAM{
     s0 s2 XCHG
     32 PUSHINT
     DICTUSETB
+  }>
+  execute_order? PROC:<{
+    SWAP
+    uint_bitcount CALLDICT
+    OVER
+    GEQ
+    IFJMP:<{
+      4 BLKDROP
+      TRUE
+    }>
+    SWAP
+    uint_bitcount CALLDICT
+    SWAP
+    GEQ
+    IFJMP:<{
+      SWAP
+      SENDRAWMSG
+      TRUE
+    }>
+    2DROP
+    FALSE
   }>
   ~load_order PROC:<{
     8 LDU
@@ -92,39 +131,39 @@ PROGRAM{
     LDREF
     8 LDU
     ENDS
+    DUP
+    1 EQINT
+    IF:<{
+      s5 PUSH
+    }>ELSE<{
+      0 PUSHINT
+    }>
+    OVER
+    2 EQINT
+    IF:<{
+    }>ELSE<{
+      s6 POP
+      0 PUSHINT
+      s0 s6 XCHG
+    }>
     NOW
-    s1 s5 XCHG
+    s1 s6 XCHG
     GREATER
     35 THROWIFNOT
-    s2 s8 PUSH2
+    s3 s9 PUSH2
     GEQ
     33 THROWIFNOT
-    s8 s9 PUSH2
+    s9 s10 PUSH2
     ADD
-    s3 s(-1) PUXC
+    s4 s(-1) PUXC
     LEQ
     33 THROWIFNOT
-    s3 PUSH
+    DUP
     1 EQINT
-    s4 PUSH
+    SWAP
     2 EQINT
     OR
     37 THROWIFNOT
-    s3 PUSH
-    1 EQINT
-    IF:<{
-      s4 PUSH
-    }>ELSE<{
-      0 PUSHINT
-    }>
-    s0 s4 XCHG
-    2 EQINT
-    IF:<{
-    }>ELSE<{
-      s4 POP
-      0 PUSHINT
-      s0 s4 XCHG
-    }>
     s5 s2 XCPU
     ~orders_delete_get_order_slice CALLDICT
     IF:<{
@@ -154,13 +193,27 @@ PROGRAM{
       DROP
     }>
     ACCEPT
-    NEWC
-    s3 s1 s4 XCHG3
-    s2 s6 XCHG
-    SWAP
-    store_order CALLDICT
-    s1 s2 XCHG
-    ~orders_set_order_builder CALLDICT
+    FALSE
+    s3 s9 PUSH2
+    EQUAL
+    IF:<{
+      DROP
+      s1 s5 s3 PUSH3
+      s3 s9 PUSH2
+      execute_order? CALLDICT
+    }>
+    IFNOT:<{
+      NEWC
+      s3 s1 s4 XCHG3
+      s2 s6 XCHG
+      SWAP
+      store_order CALLDICT
+      s1 s2 XCHG
+      ~orders_set_order_builder CALLDICT
+    }>ELSE<{
+      s4 s5 XCHG
+      5 BLKDROP
+    }>
     NEWC
     s1 s4 XCHG
     32 STU
