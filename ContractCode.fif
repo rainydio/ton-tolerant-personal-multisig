@@ -2,6 +2,7 @@
 // automatically generated from `stdlib.fc` `ContractCode.fc` 
 PROGRAM{
   DECLPROC uint_bitcount
+  DECLPROC authenticate_message
   DECLPROC ~orders_delete_get_order_slice
   DECLPROC ~orders_set_order_builder
   DECLPROC execute_order?
@@ -25,6 +26,34 @@ PROGRAM{
       SWAP
     }>
     NIP
+  }>
+  authenticate_message PROC:<{
+    256 LDU
+    9 PUSHPOW2
+    LDSLICEX
+    LDREF
+    SWAP
+    CTOS
+    SWAP
+    ENDS
+    8 PUSHPOW2
+    s3 s4 s4 PUXC2
+    DICTUGET
+    NULLSWAPIFNOT
+    NEWC
+    MYADDR
+    STSLICER
+    s5 PUSH
+    STSLICER
+    ENDC
+    SWAP
+    35 THROWIFNOT
+    HASHCU
+    s0 s0 s3 XCHG3
+    CHKSIGNU
+    35 THROWIFNOT
+    8 PLDU
+    SWAP
   }>
   ~orders_delete_get_order_slice PROC:<{
     SWAP
@@ -97,32 +126,9 @@ PROGRAM{
     LDDICT
     16 LDU
     ENDS
-    s0 s5 XCHG
-    256 LDU
-    9 PUSHPOW2
-    LDSLICEX
-    LDREF
+    s3 s5 PUXC
+    authenticate_message CALLDICT
     SWAP
-    CTOS
-    SWAP
-    ENDS
-    s2 s5 PUSH2
-    8 PUSHPOW2
-    DICTUGET
-    NULLSWAPIFNOT
-    NEWC
-    MYADDR
-    STSLICER
-    s3 PUSH
-    STSLICER
-    ENDC
-    SWAP
-    35 THROWIFNOT
-    HASHCU
-    s0 s3 s4 XCHG3
-    CHKSIGNU
-    35 THROWIFNOT
-    8 PLDU
     POW2
     SWAP
     32 LDU

@@ -9,6 +9,27 @@ int uint_bitcount(int x) {
 	return count;
 }
 
+(int, slice) authenticate_message(cell keys, slice msg) {
+	var (public_key, signature, payload_slice) = (
+		msg~load_uint(256),
+		msg~load_bits(512),
+		msg~load_ref().begin_parse()
+	); msg.end_parse();
+
+	var (public_key_index_slice, public_key_found) =
+		keys.udict_get?(256, public_key);
+
+	var signed_body = begin_cell()
+		.store_slice(my_address())
+		.store_slice(payload_slice)
+		.end_cell();
+
+	throw_unless(35, public_key_found);
+	throw_unless(35, check_signature(cell_hash(signed_body), signature, public_key));
+
+	return (public_key_index_slice.preload_uint(8), payload_slice);
+}
+
 (cell, (slice, int)) ~orders_delete_get_order_slice(cell orders, int seqno) {
 	var (order_slice, order_found) = orders~udict_delete_get?(32, seqno);
 	return (orders, (order_slice, order_found));
@@ -37,7 +58,6 @@ int uint_bitcount(int x) {
 		s~load_uint(slice_bits(s) / 2),
 		s~load_uint(slice_bits(s))
 	);
-
 	return (s, (out_mode, out_ref, confirm_mask, cancel_mask));
 }
 
@@ -68,24 +88,8 @@ int uint_bitcount(int x) {
 		data_slice~load_uint(16)
 	); data_slice.end_parse();
 
-	var (public_key, signature, payload_slice) = (
-		in_msg~load_uint(256),
-		in_msg~load_bits(512),
-		in_msg~load_ref().begin_parse()
-	); in_msg.end_parse();
-
-	var (public_key_index_slice, public_key_found) =
-		keys.udict_get?(256, public_key);
-
-	var signed_body = begin_cell()
-		.store_slice(my_address())
-		.store_slice(payload_slice)
-		.end_cell();
-
-	throw_unless(35, public_key_found);
-	throw_unless(35, check_signature(cell_hash(signed_body), signature, public_key));
-
-	var public_key_mask = 1 << public_key_index_slice.preload_uint(8);
+	var (public_key_index, payload_slice) = authenticate_message(keys, in_msg);
+	var public_key_mask = 1 << public_key_index;
 
 	var (valid_until, order_seqno, order_out_mode, order_out_ref, op) = (
 		payload_slice~load_uint(32),
