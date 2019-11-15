@@ -1,4 +1,8 @@
+"Asm.fif" include
 "TonUtil.fif" include
+
+-1 constant FN_EXTERNAL
+0  constant OK
 
 {
 	0 0x0000111100001111000011110000111100001111000011110000111100001111
@@ -22,6 +26,17 @@
 } : priv[]>pub[]
 
 {                                                                                // s_code, root, s_msg, fn_id
+	dup FN_EXTERNAL = {
+		3 roll                                                                       // root, s_msg, fn_id, s_code
+		<{
+			SETCP0
+			10000 INT SETGASLIMIT
+			swap <b swap s, b> PUSHREFCONT
+			c3 POPCTR c3 PUSH JMPX
+		}>c <s                                                                       // root, s_msg, fn_id, s_code'
+		3 -roll
+	} if
+
 	3 pick 3 roll                                                                  // s_code, s_msg, fn_id, s_code, root
 	| 0 , 1 , 2 , now , 4 , 5 , 6 , 7 , <b test-address addr, b> <s , 1 tuple      // s_code, s_msg, fn_id, s_code, root, c7
 	runvmctx                                                                       // (0,) s_code, root'

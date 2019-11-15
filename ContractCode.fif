@@ -3,11 +3,12 @@
 PROGRAM{
   DECLPROC uint_bitcount
   DECLPROC authenticate_message
-  DECLPROC ~orders_delete_get_order_slice
-  DECLPROC ~orders_set_order_builder
   DECLPROC execute_order?
   DECLPROC ~load_order
   DECLPROC store_order
+  DECLPROC ~orders_delete_get_order_slice
+  DECLPROC ~orders_set_order_builder
+  DECLPROC ~orders_execute
   DECLPROC recv_internal
   DECLPROC recv_external
   85143 DECLMETHOD seqno
@@ -54,17 +55,6 @@ PROGRAM{
     35 THROWIFNOT
     8 PLDU
     SWAP
-  }>
-  ~orders_delete_get_order_slice PROC:<{
-    SWAP
-    32 PUSHINT
-    DICTUDELGET
-    NULLSWAPIFNOT
-  }>
-  ~orders_set_order_builder PROC:<{
-    s0 s2 XCHG
-    32 PUSHINT
-    DICTUSETB
   }>
   execute_order? PROC:<{
     SWAP
@@ -113,6 +103,54 @@ PROGRAM{
     STUX
     ROT
     STUX
+  }>
+  ~orders_delete_get_order_slice PROC:<{
+    SWAP
+    32 PUSHINT
+    DICTUDELGET
+    NULLSWAPIFNOT
+  }>
+  ~orders_set_order_builder PROC:<{
+    s0 s2 XCHG
+    32 PUSHINT
+    DICTUSETB
+  }>
+  ~orders_execute PROC:<{
+    UNTIL:<{
+      FALSE
+      s2 s3 PUSH2
+      32 PUSHINT
+      DICTUGET
+      NULLSWAPIFNOT
+      IF:<{
+        NIP
+        ~load_order CALLDICT
+        s0 s4 XCHG
+        ENDS
+        3 ROLL
+        s4 PUSH
+        execute_order? CALLDICT
+        DUP
+        IF:<{
+          32 PUSHINT
+          s3 s4 s4 PUXC2
+          DICTUDEL
+          DROP
+          s0 s2 XCHG
+          INC
+        }>ELSE<{
+          s3 s1 s3 XCHG3
+        }>
+      }>ELSE<{
+        s1 s4 XCHG
+        s1 s3 XCHG
+        DROP
+      }>
+      s0 s3 XCHG
+      NOT
+      s2 s3 XCHG
+    }>
+    DROP
   }>
   recv_internal PROC:<{
     DROP
@@ -199,32 +237,20 @@ PROGRAM{
       DROP
     }>
     ACCEPT
-    FALSE
-    s3 s9 PUSH2
-    EQUAL
-    IF:<{
-      DROP
-      s1 s5 s3 PUSH3
-      s3 s9 PUSH2
-      execute_order? CALLDICT
-    }>
-    IFNOT:<{
-      NEWC
-      s3 s1 s4 XCHG3
-      s2 s6 XCHG
-      SWAP
-      store_order CALLDICT
-      s1 s2 XCHG
-      ~orders_set_order_builder CALLDICT
-    }>ELSE<{
-      s4 s5 XCHG
-      5 BLKDROP
-    }>
     NEWC
-    s1 s4 XCHG
+    s3 s1 s4 XCHG3
+    s2 s6 XCHG
+    SWAP
+    store_order CALLDICT
+    s1 s2 XCHG
+    ~orders_set_order_builder CALLDICT
+    s0 s3 s3 XC2PU
+    ~orders_execute CALLDICT
+    NEWC
     32 STU
     s1 s2 XCHG
     STDICT
+    s1 s2 XCHG
     8 STU
     STDICT
     16 STU

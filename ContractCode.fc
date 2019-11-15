@@ -30,16 +30,6 @@ int uint_bitcount(int x) {
 	return (public_key_index_slice.preload_uint(8), payload_slice);
 }
 
-(cell, (slice, int)) ~orders_delete_get_order_slice(cell orders, int seqno) {
-	var (order_slice, order_found) = orders~udict_delete_get?(32, seqno);
-	return (orders, (order_slice, order_found));
-}
-
-(cell, ()) ~orders_set_order_builder(cell orders, int seqno, builder b) {
-	orders~udict_set_builder(32, seqno, b);
-	return (orders, ());
-}
-
 (int) execute_order?(int out_mode, cell out_ref, int confirm_mask, int cancel_mask, int keys_required) {
 	if (uint_bitcount(cancel_mask) >= keys_required) {
 		return true;
@@ -72,6 +62,41 @@ int uint_bitcount(int x) {
 		.store_ref(out_ref)
 		.store_uint(confirm_mask, mask_size)
 		.store_uint(cancel_mask, mask_size);
+}
+
+(cell, (slice, int)) ~orders_delete_get_order_slice(cell orders, int seqno) {
+	var (order_slice, order_found) = orders~udict_delete_get?(32, seqno);
+	return (orders, (order_slice, order_found));
+}
+
+(cell, ()) ~orders_set_order_builder(cell orders, int seqno, builder b) {
+	orders~udict_set_builder(32, seqno, b);
+	return (orders, ());
+}
+
+(cell, (int)) ~orders_execute(cell orders, int seqno, int keys_required) {
+	do {
+		var executed = false;
+		var (order_slice, order_found) = orders.udict_get?(32, seqno);
+		if (order_found) {
+			var (out_mode, out_ref, confirm_mask, cancel_mask) =
+				order_slice~load_order(); order_slice.end_parse();
+
+			executed = execute_order?(
+				out_mode,
+				out_ref,
+				confirm_mask,
+				cancel_mask,
+				keys_required
+			);
+			if (executed) {
+				orders~udict_delete?(32, seqno);
+				seqno += 1;
+			}
+		}
+	} until (~ executed);
+
+	return (orders, (seqno));
 }
 
 () recv_internal(slice in_msg) impure {
@@ -128,26 +153,16 @@ int uint_bitcount(int x) {
 	}
 
 	accept_message();
+	;; throw_if(100, true);
 
-	var order_executed = false;
-	if (order_seqno == current_seqno) {
-		order_executed = execute_order?(
-			order_out_mode,
-			order_out_ref,
-			order_confirm_mask,
-			order_cancel_mask,
-			keys_required
-		);
-	}
+	orders~orders_set_order_builder(order_seqno, begin_cell().store_order(
+		order_out_mode,
+		order_out_ref,
+		order_confirm_mask,
+		order_cancel_mask
+	));
 
-	ifnot (order_executed) {
-		orders~orders_set_order_builder(order_seqno, begin_cell().store_order(
-			order_out_mode,
-			order_out_ref,
-			order_confirm_mask,
-			order_cancel_mask
-		));
-	}
+	current_seqno = orders~orders_execute(current_seqno, keys_required);
 
 	set_data(begin_cell()
 		.store_uint(current_seqno, 32)

@@ -3,9 +3,6 @@
 "TestUtil.fif" include
 "ContractUtil.fif" include
 
--1 constant FN_EXTERNAL
-0  constant OK
-
 "ContractCode.fif" include <s
 
 3 test-priv[] constant priv1
