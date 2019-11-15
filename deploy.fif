@@ -1,0 +1,31 @@
+#!/bin/env -S fift -s
+
+"Asm.fif" include
+"TonUtil.fif" include
+"TestUtil.fif" include
+"ContractUtil.fif" include
+
+	"data/" 3 test-priv[]-saved
+constant privkeys
+
+	privkeys priv[]>pub[]
+constant pubkeys
+
+	32 pubkeys contract-data
+constant data
+
+	<{ SETCP0 ACCEPT "ContractCode.fif" include PUSHREF SETCODE }>c
+constant code
+
+	<b b{0011} s, code ref, data ref, dictnew dict, b>
+constant stateinit
+
+	0 stateinit hashu
+2constant address
+
+<b b{1000100} s, address addr, b{000010} s, stateinit <s s, b{0} s, b>
+	2 boc+>B "data/wallet-new.boc" B>file
+
+cr
+."lite-client -c 'last' -c 'getaccount " address 7 smca>$ type ."'" cr
+."lite-client -c 'sendfile data/wallet-new.boc'" cr

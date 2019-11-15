@@ -1,0 +1,134 @@
+int uint_bitsize(int x) asm "UBITSIZE";
+
+(int, slice) authenticate_message(cell keys, slice in_msg) {
+	var (public_key, signature, payload_slice) = (
+		in_msg~load_uint(256),
+		in_msg~load_bits(512),
+		in_msg~load_ref().begin_parse()
+	); in_msg.end_parse();
+
+	var (public_key_index_slice, public_key_found) =
+		keys.udict_get?(256, public_key);
+
+	var signed_body = begin_cell()
+		.store_slice(my_address())
+		.store_slice(payload_slice)
+		.end_cell();
+
+	throw_unless(35, public_key_found);
+	throw_unless(35, check_signature(cell_hash(signed_body), signature, public_key));
+
+	return (public_key_index_slice.preload_uint(8), payload_slice);
+}
+
+(cell, (int, int)) ~orders_delete_get_masks(cell orders, int seqno, int out_mode, cell out_ref) {
+	var (order_slice, order_found) = orders~udict_delete_get?(32, seqno);
+
+	if (order_found) {
+		var (stored_out_mode, stored_out_ref, confirm_mask, cancel_mask) = (
+			order_slice~load_uint(8),
+			order_slice~load_ref(),
+			order_slice~load_uint(slice_bits(order_slice) / 2),
+			order_slice~load_uint(slice_bits(order_slice))
+		); order_slice.end_parse();
+
+		throw_unless(36, out_mode == stored_out_mode);
+		throw_unless(36, cell_hash(out_ref) == cell_hash(stored_out_ref));
+
+		return (orders, (confirm_mask, cancel_mask));
+	}
+	else {
+		return (orders, (0, 0));
+	}
+}
+
+(cell, ()) ~orders_set_masks(cell orders, int seqno, int out_mode, cell out_ref, int confirm_mask, int cancel_mask) {
+	var size = max(uint_bitsize(confirm_mask), uint_bitsize(cancel_mask));
+	orders~udict_set_builder(32, seqno, begin_cell()
+		.store_uint(out_mode, 8)
+		.store_ref(out_ref)
+		.store_uint(confirm_mask, size)
+		.store_uint(cancel_mask, size)
+	);
+	return (orders, ());
+}
+
+(cell, ()) ~orders_confirm(cell orders, int seqno, int out_mode, cell out_ref, int index) {
+	var (confirm_mask, cancel_mask) = orders~orders_delete_get_masks(seqno, out_mode, out_ref);
+	var mask = 1 << index;
+	throw_if(38, confirm_mask & mask);
+	confirm_mask |= mask;
+	orders~orders_set_masks(seqno, out_mode, out_ref, confirm_mask, cancel_mask);
+	return (orders, ());
+}
+
+(cell, ()) ~orders_cancel(cell orders, int seqno, int out_mode, cell out_ref, int index) {
+	var (confirm_mask, cancel_mask) = orders~orders_delete_get_masks(seqno, out_mode, out_ref);
+	var mask = 1 << index;
+	throw_if(38, cancel_mask & mask);
+	cancel_mask |= mask;
+	orders~orders_set_masks(seqno, out_mode, out_ref, confirm_mask, cancel_mask);
+	return (orders, ());
+}
+
+(cell, (int)) ~orders_execute(cell orders, int seqno, int keys_required) {
+	return (orders, (seqno));
+}
+
+() recv_internal(slice in_msg) impure {
+
+}
+
+() recv_external(slice in_msg) impure {
+	var data_slice = get_data().begin_parse();
+	var (stored_seqno, keys, keys_required, orders, seqno_tolerance) = (
+		data_slice~load_uint(32),
+		data_slice~load_dict(),
+		data_slice~load_uint(8),
+		data_slice~load_dict(),
+		data_slice~load_uint(32)
+	); data_slice.end_parse();
+
+	var (public_key_index, payload_slice) = authenticate_message(keys, in_msg);
+	var (op, seqno, exp, out_mode, out_ref) = (
+		payload_slice~load_uint(32),
+		payload_slice~load_uint(32),
+		payload_slice~load_uint(32),
+		payload_slice~load_uint(8),
+		payload_slice~load_ref()
+	); payload_slice.end_parse();
+
+	throw_unless(37, op >= 0x00000001);
+	throw_unless(37, op <= 0x00000002);
+	throw_unless(33, seqno >= stored_seqno);
+	throw_unless(33, seqno <= stored_seqno + seqno_tolerance);
+	throw_unless(35, exp > now());
+
+	if (op == 0x00000001) {
+		orders~orders_confirm(seqno, out_mode, out_ref, public_key_index);
+	}
+	if (op == 0x00000002) {
+		orders~orders_cancel(seqno, out_mode, out_ref, public_key_index);
+	}
+
+	accept_message();
+
+	if (seqno == stored_seqno) {
+		stored_seqno = orders~orders_execute(stored_seqno, keys_required);
+	}
+
+	set_data(begin_cell()
+		.store_uint(stored_seqno, 32)
+		.store_dict(keys)
+		.store_uint(keys_required, 8)
+		.store_dict(orders)
+		.store_uint(seqno_tolerance, 32)
+		.end_cell()
+	);
+}
+
+;; Get methods
+
+int seqno() method_id {
+	return get_data().begin_parse().preload_uint(32);
+}

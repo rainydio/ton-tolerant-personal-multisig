@@ -1,0 +1,29 @@
+"TonUtil.fif" include
+
+{
+	0 0x0000111100001111000011110000111100001111000011110000111100001111
+} : test-address
+
+{                                                                                // n
+	| swap { newkeypair drop , } swap times                                        // pvtkeys[]
+} : test-priv[]
+
+{                                                                                // filebase, count
+	| swap {
+		over "key" $+ over count (.) $+ +".pk" load-generate-keypair nip ,
+	} swap times nip                                                               // pvtkeys[]
+} : test-priv[]-saved
+
+{                                                                                // pvtkeys[]
+	explode {
+		swap priv>pub
+		over -roll
+	} over times tuple                                                             // keys[]
+} : priv[]>pub[]
+
+{                                                                                // s_code, root, s_msg, fn_id
+	3 pick 3 roll                                                                  // s_code, s_msg, fn_id, s_code, root
+	| 0 , 1 , 2 , now , 4 , 5 , 6 , 7 , <b test-address addr, b> <s , 1 tuple      // s_code, s_msg, fn_id, s_code, root, c7
+	runvmctx                                                                       // (0,) s_code, root'
+	over 0= { swap } { -rot nip } cond                                             // root', s_code, exit_code
+} : test-run

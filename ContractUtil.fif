@@ -1,0 +1,41 @@
+library ContractUtil
+
+"TonUtil.fif" include
+
+{                                                                                // keys[]
+	0 dictnew {                                                                    // keys[], i, keys
+		2 pick 2 pick [] 256 B>u@                                                    // keys[], i, keys, key
+		2 pick <b swap 8 u, b> <s                                                    // keys[], i, keys, key, i
+		3 0 reverse 256 udict! 0= abort"contract-data-keys"                          // keys[], i, keys'
+		swap 1 + swap                                                                // keys[], i', keys
+	} 3 pick count times
+	nip nip
+} : contract-data-keys
+
+{                                                                                // seqno_tolerance, keys[]
+	<b
+		1 32 u,                        // seqno
+		over contract-data-keys dict,  // keys
+		swap count 2 / 1 + 8 u,        // keys_required
+		dictnew dict,                  // orders
+		swap 32 u,                     // seqno_tolerance
+	b>
+} : contract-data
+
+{                                                                                // priv, dst-addr, msg_payload
+	-rot                                                                           // priv, msg_payload, dst,addr
+	<b -rot addr, over <s s, b> hashu                                              // priv, msg_payload, hash
+	2 pick ed25519_sign_uint                                                       // priv, msg_payload, signature
+	rot priv>pub                                                                   // msg_payload, signature, pub
+	<b swap B, swap B, swap ref, b>                                                // msg_body
+} : contract-msg-body
+
+{                                                                                // priv, dst-addr, order_seqno, msg_exp, out_mode, out_msg
+	4 0 reverse                                                                    // priv, dst-addr, out_msg, out_mode, msg_exp, order_seqno
+	<b 1 32 u, swap 32 u, swap 32 u, swap 8 u, swap ref, b>                        // priv, dst-addr, msg_payload
+	contract-msg-body                                                              // msg_body
+} : contract-msg-confirm-order
+
+{                                                                                // priv, dst_addr, order_seqno, msg_exp
+
+} : contract-msg-order-cancel

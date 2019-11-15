@@ -1,0 +1,16 @@
+#!/bin/env -S fift -s
+
+"TestUtil.fif" include
+"ContractUtil.fif" include
+
+-1 constant FN_EXTERNAL
+0  constant OK
+
+"ContractCode.fif" include <s
+
+3 test-priv[] constant priv1
+0 priv1 priv[]>pub[] contract-data
+
+	priv1 0 [] test-address
+	1 now 5 + 0 <b b>
+contract-msg-confirm-order <s FN_EXTERNAL test-run OK <> abort"test1.1"

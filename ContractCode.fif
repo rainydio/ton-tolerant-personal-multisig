@@ -1,0 +1,206 @@
+"Asm.fif" include
+// automatically generated from `/home/rainydio/work/ton/crypto/smartcont/stdlib.fc` `ContractCode.fc` 
+PROGRAM{
+  DECLPROC authenticate_message
+  DECLPROC ~orders_delete_get_masks
+  DECLPROC ~orders_set_masks
+  DECLPROC ~orders_confirm
+  DECLPROC ~orders_cancel
+  DECLPROC ~orders_execute
+  DECLPROC recv_internal
+  DECLPROC recv_external
+  85143 DECLMETHOD seqno
+  authenticate_message PROC:<{
+    256 LDU
+    9 PUSHPOW2
+    LDSLICEX
+    LDREF
+    SWAP
+    CTOS
+    SWAP
+    ENDS
+    8 PUSHPOW2
+    s3 s4 s4 PUXC2
+    DICTUGET
+    NULLSWAPIFNOT
+    NEWC
+    MYADDR
+    STSLICER
+    s5 PUSH
+    STSLICER
+    ENDC
+    SWAP
+    35 THROWIFNOT
+    HASHCU
+    s0 s0 s3 XCHG3
+    CHKSIGNU
+    35 THROWIFNOT
+    8 PLDU
+    SWAP
+  }>
+  ~orders_delete_get_masks PROC:<{
+    s2 s3 XCHG2
+    32 PUSHINT
+    DICTUDELGET
+    NULLSWAPIFNOT
+    IFJMP:<{
+      8 LDU
+      LDREF
+      DUP
+      SBITS
+      1 RSHIFT#
+      LDUX
+      DUP
+      SBITS
+      LDUX
+      ENDS
+      s5 s3 XCHG2
+      EQUAL
+      36 THROWIFNOT
+      s0 s4 XCHG
+      HASHCU
+      s0 s4 XCHG
+      HASHCU
+      s1 s4 XCHG
+      EQUAL
+      36 THROWIFNOT
+      s0 s2 XCHG
+    }>
+    s1 s3 XCHG
+    3 BLKDROP
+    0 PUSHINT
+    DUP
+  }>
+  ~orders_set_masks PROC:<{
+    OVER
+    UBITSIZE
+    OVER
+    UBITSIZE
+    MAX
+    NEWC
+    s1 s5 XCHG
+    8 STU
+    s1 s3 XCHG
+    STREF
+    s3 PUSH
+    STUX
+    ROT
+    STUX
+    s0 s2 XCHG
+    32 PUSHINT
+    DICTUSETB
+  }>
+  ~orders_confirm PROC:<{
+    s4 s3 s2 XCPU2
+    s3 PUSH
+    ~orders_delete_get_masks CALLDICT
+    s0 s6 XCHG
+    POW2
+    2DUP
+    AND
+    38 THROWIF
+    OR
+    s0 s5 XCHG2
+    ~orders_set_masks CALLDICT
+  }>
+  ~orders_cancel PROC:<{
+    s4 s3 s2 XCPU2
+    s3 PUSH
+    ~orders_delete_get_masks CALLDICT
+    s0 s6 XCHG
+    POW2
+    s6 s0 PUSH2
+    AND
+    38 THROWIF
+    s1 s6 XCHG
+    OR
+    s1 s5 XCHG
+    ~orders_set_masks CALLDICT
+  }>
+  ~orders_execute PROC:<{
+    DROP
+  }>
+  recv_internal PROC:<{
+    DROP
+  }>
+  recv_external PROC:<{
+    c4 PUSH
+    CTOS
+    32 LDU
+    LDDICT
+    8 LDU
+    LDDICT
+    32 LDU
+    ENDS
+    s3 s5 PUXC
+    authenticate_message CALLDICT
+    32 LDU
+    32 LDU
+    32 LDU
+    8 LDU
+    LDREF
+    ENDS
+    s4 PUSH
+    0 GTINT
+    37 THROWIFNOT
+    s4 PUSH
+    3 LESSINT
+    37 THROWIFNOT
+    s3 s9 PUSH2
+    GEQ
+    33 THROWIFNOT
+    s9 s10 PUSH2
+    ADD
+    s4 s(-1) PUXC
+    LEQ
+    33 THROWIFNOT
+    NOW
+    s1 s3 XCHG
+    GREATER
+    35 THROWIFNOT
+    s3 PUSH
+    1 EQINT
+    IF:<{
+      s5 s2 s5 XCPU2
+      s3 s6 PUSH2
+      ~orders_confirm CALLDICT
+    }>ELSE<{
+      s0 s5 XCHG
+    }>
+    s0 s3 XCHG
+    2 EQINT
+    IF:<{
+      s2 s3 XCHG
+      s1 s0 s2 PUXC2
+      s2 s5 XCHG
+      ~orders_cancel CALLDICT
+    }>ELSE<{
+      4 1 REVERSE
+      3 BLKDROP
+    }>
+    ACCEPT
+    s1 s4 XCPU
+    EQUAL
+    IF:<{
+      s0 s3 s3 XC2PU
+      ~orders_execute CALLDICT
+    }>ELSE<{
+      s0 s3 XCHG2
+    }>
+    NEWC
+    32 STU
+    s1 s2 XCHG
+    STDICT
+    s1 s2 XCHG
+    8 STU
+    STDICT
+    32 STU
+    ENDC
+    c4 POP
+  }>
+  seqno PROC:<{
+    c4 PUSH
+    CTOS
+    32 PLDU
+  }>
+}END>c
