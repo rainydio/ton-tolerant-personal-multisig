@@ -18,24 +18,24 @@ library ContractUtil
 		over contract-data-keys dict,  // keys
 		swap count 2 / 1 + 8 u,        // keys_required
 		dictnew dict,                  // orders
-		swap 32 u,                     // seqno_tolerance
+		swap 16 u,                     // seqno_tolerance
 	b>
 } : contract-data
 
-{                                                                                // priv, dst-addr, msg_payload
-	-rot                                                                           // priv, msg_payload, dst,addr
-	<b -rot addr, over <s s, b> hashu                                              // priv, msg_payload, hash
-	2 pick ed25519_sign_uint                                                       // priv, msg_payload, signature
-	rot priv>pub                                                                   // msg_payload, signature, pub
-	<b swap B, swap B, swap ref, b>                                                // msg_body
+{                                                                                // priv, dst-addr, payload
+	-rot                                                                           // priv, payload, dst,addr
+	<b -rot addr, over <s s, b> hashu                                              // priv, payload, hash
+	2 pick ed25519_sign_uint                                                       // priv, payload, signature
+	rot priv>pub                                                                   // payload, signature, pub
+	<b swap B, swap B, swap ref, b>                                                // body
 } : contract-msg-body
 
-{                                                                                // priv, dst-addr, order_seqno, msg_exp, out_mode, out_msg
-	4 0 reverse                                                                    // priv, dst-addr, out_msg, out_mode, msg_exp, order_seqno
-	<b 1 32 u, swap 32 u, swap 32 u, swap 8 u, swap ref, b>                        // priv, dst-addr, msg_payload
-	contract-msg-body                                                              // msg_body
+{                                                                                // priv, dst-addr, seqno, valid_until, out_mode, out_msg
+	4 0 reverse swap                                                               // priv, dst-addr, order_out_ref, order_out_mode, order_seqno, valid_until
+	<b swap 32 u, swap 32 u, swap 8 u, swap ref, 1 8 u, b>                         // priv, dst-addr, payload
+	contract-msg-body                                                              // body
 } : contract-msg-confirm-order
 
-{                                                                                // priv, dst_addr, order_seqno, msg_exp
+{                                                                                // priv, dst_addr, seqno, valid_until
 
 } : contract-msg-order-cancel

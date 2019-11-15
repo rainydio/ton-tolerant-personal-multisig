@@ -14,3 +14,7 @@
 	priv1 0 [] test-address
 	1 now 5 + 0 <b b>
 contract-msg-confirm-order <s FN_EXTERNAL test-run OK <> abort"test1.1"
+
+	priv1 1 [] test-address
+	1 now 5 + 0 <b b>
+contract-msg-confirm-order <s FN_EXTERNAL test-run OK <> abort"test1.1"
