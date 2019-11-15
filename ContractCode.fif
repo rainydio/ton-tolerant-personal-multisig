@@ -1,5 +1,5 @@
 "Asm.fif" include
-// automatically generated from `/home/rainydio/work/ton/crypto/smartcont/stdlib.fc` `ContractCode.fc` 
+// automatically generated from `stdlib.fc` `ContractCode.fc` 
 PROGRAM{
   DECLPROC uint_bitcount
   DECLPROC ~orders_delete_get_order_slice
