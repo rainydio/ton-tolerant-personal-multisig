@@ -1,9 +1,6 @@
 "Asm.fif" include
 "TonUtil.fif" include
 
--1 constant FN_EXTERNAL
-0  constant OK
-
 {
 	0 0x0000111100001111000011110000111100001111000011110000111100001111
 } : test-address
@@ -14,7 +11,7 @@
 
 {                                                                                // filebase, count
 	| swap {
-		over "key" $+ over count (.) $+ +".pk" load-generate-keypair nip ,
+		over over count (.) $+ +".pk" load-generate-keypair nip ,
 	} swap times nip                                                               // pvtkeys[]
 } : test-priv[]-saved
 
@@ -25,20 +22,11 @@
 	} over times tuple                                                             // keys[]
 } : priv[]>pub[]
 
-{                                                                                // s_code, root, s_msg, fn_id
-	dup FN_EXTERNAL = {
-		3 roll                                                                       // root, s_msg, fn_id, s_code
-		<{
-			SETCP0
-			10000 INT SETGASLIMIT
-			swap <b swap s, b> PUSHREFCONT
-			c3 POPCTR c3 PUSH JMPX
-		}>c <s                                                                       // root, s_msg, fn_id, s_code'
-		3 -roll
-	} if
-
-	3 pick 3 roll                                                                  // s_code, s_msg, fn_id, s_code, root
-	| 0 , 1 , 2 , now , 4 , 5 , 6 , 7 , <b test-address addr, b> <s , 1 tuple      // s_code, s_msg, fn_id, s_code, root, c7
-	runvmctx                                                                       // (0,) s_code, root'
-	over 0= { swap } { -rot nip } cond                                             // root', s_code, exit_code
+{                                                                                // root, s_msg, fn_id, s_code, gas_limit
+	4 roll swap                                                                    // s_msg, fn_id, s_code, root, gas_limit
+	| 0 , 1 , 2 , now , 4 , 5 , 6 , 7 , <b test-address addr, b> <s , 1 tuple      // s_msg, fn_id, s_code, root, gas_limit, c7
+	swap                                                                           // s_msg, fn_id, s_code, root, c7, gas_limit
+	gasrunvmctx                                                                    // (0) | (0, err), root', gas_consumed
+	2 pick 0<> { 3 roll drop } if                                                  // 0 | err, root, gas_consumed
+	2 1 exch2                                                                      // root, 0 | err, gas_consumed
 } : test-run

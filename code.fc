@@ -9,167 +9,120 @@ int uint_bitcount(int x) {
 	return count;
 }
 
-(int, slice) authenticate_message(cell keys, slice msg) {
-	var (public_key, signature, payload_slice) = (
-		msg~load_uint(256),
-		msg~load_bits(512),
-		msg~load_ref().begin_parse()
-	); msg.end_parse();
-
-	var (public_key_index_slice, public_key_found) =
-		keys.udict_get?(256, public_key);
-
-	var signed_body = begin_cell()
-		.store_slice(my_address())
-		.store_slice(payload_slice)
-		.end_cell();
-
-	throw_unless(35, public_key_found);
-	throw_unless(35, check_signature(cell_hash(signed_body), signature, public_key));
-
-	return (public_key_index_slice.preload_uint(8), payload_slice);
-}
-
-(int) execute_order?(int out_mode, cell out_ref, int confirm_mask, int cancel_mask, int keys_required) {
-	if (uint_bitcount(cancel_mask) >= keys_required) {
-		return true;
-	}
-	if (uint_bitcount(confirm_mask) >= keys_required) {
-		send_raw_message(out_ref, out_mode);
-		return true;
-	}
-	return false;
-}
-
-(slice, (int, cell, int, int)) ~load_order(slice s) {
-	var (out_mode, out_ref, confirm_mask, cancel_mask) = (
-		s~load_uint(8),
-		s~load_ref(),
-		s~load_uint(slice_bits(s) / 2),
-		s~load_uint(slice_bits(s))
-	);
-	return (s, (out_mode, out_ref, confirm_mask, cancel_mask));
-}
-
-(builder) store_order(builder b, int out_mode, cell out_ref, int confirm_mask, int cancel_mask) {
-	var mask_size = max(
-		uint_bitsize(confirm_mask),
-		uint_bitsize(cancel_mask)
-	);
-
-	return b
-		.store_uint(out_mode, 8)
-		.store_ref(out_ref)
-		.store_uint(confirm_mask, mask_size)
-		.store_uint(cancel_mask, mask_size);
-}
-
-(cell, (slice, int)) ~orders_delete_get_order_slice(cell orders, int seqno) {
-	var (order_slice, order_found) = orders~udict_delete_get?(32, seqno);
-	return (orders, (order_slice, order_found));
-}
-
-(cell, ()) ~orders_set_order_builder(cell orders, int seqno, builder b) {
-	orders~udict_set_builder(32, seqno, b);
-	return (orders, ());
-}
-
-(cell, (int)) ~orders_execute(cell orders, int seqno, int keys_required) {
-	do {
-		var executed = false;
-		var (order_slice, order_found) = orders.udict_get?(32, seqno);
-		if (order_found) {
-			var (out_mode, out_ref, confirm_mask, cancel_mask) =
-				order_slice~load_order(); order_slice.end_parse();
-
-			executed = execute_order?(
-				out_mode,
-				out_ref,
-				confirm_mask,
-				cancel_mask,
-				keys_required
-			);
-			if (executed) {
-				orders~udict_delete?(32, seqno);
-				seqno += 1;
-			}
-		}
-	} until (~ executed);
-
-	return (orders, (seqno));
-}
-
 () recv_internal(slice in_msg) impure {
 
 }
 
 () recv_external(slice in_msg) impure {
 	var data_slice = get_data().begin_parse();
-	var (current_seqno, keys, keys_required, orders, seqno_tolerance) = (
-		data_slice~load_uint(32),
+	var (keys, k, tolerance, current_seqno, orders, reset_cfrm) = (
 		data_slice~load_dict(),
 		data_slice~load_uint(8),
+		data_slice~load_uint(16),
+		data_slice~load_uint(32),
 		data_slice~load_dict(),
-		data_slice~load_uint(16)
+		data_slice~load_uint(slice_bits(data_slice))
 	); data_slice.end_parse();
 
-	var (public_key_index, payload_slice) = authenticate_message(keys, in_msg);
-	var public_key_mask = 1 << public_key_index;
+	var auth_slice = in_msg~load_ref().begin_parse();
+	var (public_key, signature) = (
+		auth_slice~load_uint(256),
+		auth_slice~load_bits(512)
+	); auth_slice.end_parse();
 
-	var (valid_until, order_seqno, order_out_mode, order_out_ref, op) = (
-		payload_slice~load_uint(32),
-		payload_slice~load_uint(32),
-		payload_slice~load_uint(8),
-		payload_slice~load_ref(),
-		payload_slice~load_uint(8)
-	); payload_slice.end_parse();
+	var (slot_slice, public_key_found) = keys.udict_get?(256, public_key);
 
-	var order_confirm_mask = op == 1 ? public_key_mask : 0;
-	var order_cancel_mask = op == 2 ? public_key_mask : 0;
+	var signed_body = begin_cell()
+		.store_slice(my_address())
+		.store_slice(in_msg)
+		.end_cell();
 
-	throw_unless(35, valid_until > now());
-	throw_unless(33, order_seqno >= current_seqno);
-	throw_unless(33, order_seqno <= current_seqno + seqno_tolerance);
-	throw_unless(37, (op == 1) | (op == 2));
+	throw_unless(35, public_key_found);
+	throw_unless(36, check_signature(cell_hash(signed_body), signature, public_key));
 
-	var (stored_order_slice, stored_order_found) =
-		orders~orders_delete_get_order_slice(order_seqno);
+	var public_key_mask = 1 << slot_slice.preload_uint(8);
+	var (valid_until, seqno) = (in_msg~load_uint(32), in_msg~load_uint(32));
+	var out = in_msg;
 
-	if (stored_order_found) {
-		var (
-			stored_order_out_mode,
-			stored_order_out_ref,
-			stored_order_confirm_mask,
-			stored_order_cancel_mask
-		) = stored_order_slice~load_order(); stored_order_slice.end_parse();
+	throw_unless(33, valid_until > now());
 
-		throw_if(36, order_out_mode != stored_order_out_mode);
-		throw_if(36, cell_hash(stored_order_out_ref) != cell_hash(order_out_ref));
-		throw_if(36, stored_order_confirm_mask & order_confirm_mask);
-		throw_if(36, stored_order_cancel_mask & order_cancel_mask);
+	if (slice_empty?(out)) {
+		throw_unless(34, seqno == current_seqno);
+		throw_if(37, reset_cfrm & public_key_mask);
 
-		order_confirm_mask |= stored_order_confirm_mask;
-		order_cancel_mask |= stored_order_cancel_mask;
+		accept_message();
+
+		reset_cfrm |= public_key_mask;
+		if (uint_bitcount(reset_cfrm) >= k) {
+			current_seqno += tolerance + 1;
+			orders = new_dict();
+			reset_cfrm = 0;
+		}
+	}
+	else {
+		throw_unless(34, seqno >= current_seqno);
+		throw_unless(34, seqno <= current_seqno + tolerance);
+
+		var order_seqno = seqno;
+		var order_cfrm = public_key_mask;
+		var order_out_mode = out~load_uint(8);
+		var order_out_msg = out~load_ref();
+
+		var (stored_order_slice, stored_order_found) =
+			orders~udict_delete_get?(32, seqno);
+
+		if (stored_order_found) {
+			var (stored_out_mode, stored_out_msg, stored_cfrm) = (
+				stored_order_slice~load_uint(8),
+				stored_order_slice~load_ref(),
+				stored_order_slice~load_uint(slice_bits(stored_order_slice))
+			); stored_order_slice.end_parse();
+
+			throw_if(38, stored_out_mode != order_out_mode);
+			throw_if(38, cell_hash(stored_out_msg) != cell_hash(order_out_msg));
+			throw_if(37, stored_cfrm & order_cfrm);
+
+			order_cfrm |= stored_cfrm;
+		}
+
+		accept_message();
+
+		if (order_seqno == current_seqno) {
+			do {
+				var next_order_found = false;
+				if (uint_bitcount(order_cfrm) >= k) {
+					send_raw_message(order_out_msg, order_out_mode);
+
+					current_seqno = order_seqno = order_seqno + 1;
+					(stored_order_slice, next_order_found) =
+						orders~udict_delete_get?(32, current_seqno);
+					if (next_order_found) {
+						(order_out_mode, order_out_msg, order_cfrm) = (
+							stored_order_slice~load_uint(8),
+							stored_order_slice~load_ref(),
+							stored_order_slice~load_uint(slice_bits(stored_order_slice))
+						); stored_order_slice.end_parse();
+					}
+				}
+			} until (~ next_order_found);
+		}
+
+		if (uint_bitcount(order_cfrm) < k) {
+			orders~udict_set_builder(32, order_seqno, begin_cell()
+				.store_uint(order_out_mode, 8)
+				.store_ref(order_out_msg)
+				.store_uint(order_cfrm, uint_bitsize(order_cfrm))
+			);
+		}
 	}
 
-	accept_message();
-	;; throw_if(100, true);
-
-	orders~orders_set_order_builder(order_seqno, begin_cell().store_order(
-		order_out_mode,
-		order_out_ref,
-		order_confirm_mask,
-		order_cancel_mask
-	));
-
-	current_seqno = orders~orders_execute(current_seqno, keys_required);
-
 	set_data(begin_cell()
-		.store_uint(current_seqno, 32)
 		.store_dict(keys)
-		.store_uint(keys_required, 8)
+		.store_uint(k, 8)
+		.store_uint(tolerance, 16)
+		.store_uint(current_seqno, 32)
 		.store_dict(orders)
-		.store_uint(seqno_tolerance, 16)
+		.store_uint(uint_bitsize(reset_cfrm), reset_cfrm)
 		.end_cell()
 	);
 }

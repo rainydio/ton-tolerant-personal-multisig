@@ -3,15 +3,45 @@
 "TestUtil.fif" include
 "ContractUtil.fif" include
 
-"ContractCode.fif" include <s
+"code.fif" include <s constant contract-code
 
-3 test-priv[] constant priv1
+"fixtures/key_" 3 test-priv[]-saved constant priv1
 0 priv1 priv[]>pub[] contract-data
 
-	priv1 0 [] test-address
-	1 now 5 + 0 <b b>
-contract-msg-confirm-order <s FN_EXTERNAL test-run OK <> abort"test1.1"
 
-	priv1 1 [] test-address
-	1 now 5 + 0 <b b>
-contract-msg-confirm-order <s FN_EXTERNAL test-run OK <> abort"test1.1"
+		5 now + 1 contract-reset
+		priv1 0 [] test-address contract-sign
+	<s -1 contract-code 10000 test-run
+5000 > abort"test1.1" 0 <> abort"test1.1"
+
+		5 now + 1 contract-reset
+		priv1 1 [] test-address contract-sign
+	<s -1 contract-code 10000 test-run
+5500 > abort"test1.2" 0 <> abort"test1.2"
+
+		5 now + 1 contract-reset
+		priv1 2 [] test-address contract-sign
+	<s -1 contract-code 10000 test-run
+3000 > abort"test1.3" 34 <> abort"test1.3"
+
+
+
+		5 now + 2 3 <b b> contract-order
+		priv1 2 [] test-address contract-sign
+	<s -1 contract-code 10000 test-run
+8000 > abort"test2.1" 0 <> abort"test2.1"
+
+		5 now + 2 3 <b b> contract-order
+		priv1 2 [] test-address contract-sign
+	<s -1 contract-code 10000 test-run
+4000 > abort"test2.2" 37 <> abort"test2.2"
+
+		5 now + 2 3 <b b> contract-order
+		priv1 0 [] test-address contract-sign
+	<s -1 contract-code 10000 test-run
+9000 > abort"test2.3" 0 <> abort"test2.3"
+
+		5 now + 2 3 <b b> contract-order
+		priv1 1 [] test-address contract-sign
+	<s -1 contract-code 10000 test-run
+3000 > abort"test2.4" 34 <> abort"test2.4"

@@ -1,14 +1,7 @@
 "Asm.fif" include
-// automatically generated from `stdlib.fc` `ContractCode.fc` 
+// automatically generated from `stdlib.fc` `code.fc` 
 PROGRAM{
   DECLPROC uint_bitcount
-  DECLPROC authenticate_message
-  DECLPROC execute_order?
-  DECLPROC ~load_order
-  DECLPROC store_order
-  DECLPROC ~orders_delete_get_order_slice
-  DECLPROC ~orders_set_order_builder
-  DECLPROC ~orders_execute
   DECLPROC recv_internal
   DECLPROC recv_external
   85143 DECLMETHOD seqno
@@ -28,17 +21,31 @@ PROGRAM{
     }>
     NIP
   }>
-  authenticate_message PROC:<{
-    256 LDU
-    9 PUSHPOW2
-    LDSLICEX
+  recv_internal PROC:<{
+    DROP
+  }>
+  recv_external PROC:<{
+    c4 PUSH
+    CTOS
+    LDDICT
+    8 LDU
+    16 LDU
+    32 LDU
+    LDDICT
+    DUP
+    SBITS
+    LDUX
+    ENDS
+    s0 s6 XCHG
     LDREF
     SWAP
     CTOS
-    SWAP
+    256 LDU
+    9 PUSHPOW2
+    LDSLICEX
     ENDS
+    s1 s7 PUSH2
     8 PUSHPOW2
-    s3 s4 s4 PUXC2
     DICTUGET
     NULLSWAPIFNOT
     NEWC
@@ -52,208 +59,177 @@ PROGRAM{
     HASHCU
     s0 s0 s3 XCHG3
     CHKSIGNU
-    35 THROWIFNOT
+    36 THROWIFNOT
     8 PLDU
-    SWAP
-  }>
-  execute_order? PROC:<{
-    SWAP
-    uint_bitcount CALLDICT
-    OVER
-    GEQ
-    IFJMP:<{
-      4 BLKDROP
-      TRUE
-    }>
-    SWAP
-    uint_bitcount CALLDICT
-    SWAP
-    GEQ
-    IFJMP:<{
-      SWAP
-      SENDRAWMSG
-      TRUE
-    }>
-    2DROP
-    FALSE
-  }>
-  ~load_order PROC:<{
-    8 LDU
-    LDREF
-    DUP
-    SBITS
-    1 RSHIFT#
-    LDUX
-    DUP
-    SBITS
-    LDUX
-    4 -ROLL
-  }>
-  store_order PROC:<{
-    OVER
-    UBITSIZE
-    OVER
-    UBITSIZE
-    MAX
-    s4 s5 XCHG2
-    8 STU
-    s1 s2 XCHG
-    STREF
-    s3 PUSH
-    STUX
-    ROT
-    STUX
-  }>
-  ~orders_delete_get_order_slice PROC:<{
-    SWAP
-    32 PUSHINT
-    DICTUDELGET
-    NULLSWAPIFNOT
-  }>
-  ~orders_set_order_builder PROC:<{
-    s0 s2 XCHG
-    32 PUSHINT
-    DICTUSETB
-  }>
-  ~orders_execute PROC:<{
-    UNTIL:<{
-      FALSE
-      s2 s3 PUSH2
-      32 PUSHINT
-      DICTUGET
-      NULLSWAPIFNOT
-      IF:<{
-        NIP
-        ~load_order CALLDICT
-        s0 s4 XCHG
-        ENDS
-        3 ROLL
-        s4 PUSH
-        execute_order? CALLDICT
-        DUP
-        IF:<{
-          32 PUSHINT
-          s3 s4 s4 PUXC2
-          DICTUDEL
-          DROP
-          s0 s2 XCHG
-          INC
-        }>ELSE<{
-          s3 s1 s3 XCHG3
-        }>
-      }>ELSE<{
-        s1 s4 XCHG
-        s1 s3 XCHG
-        DROP
-      }>
-      s0 s3 XCHG
-      NOT
-      s2 s3 XCHG
-    }>
-    DROP
-  }>
-  recv_internal PROC:<{
-    DROP
-  }>
-  recv_external PROC:<{
-    c4 PUSH
-    CTOS
-    32 LDU
-    LDDICT
-    8 LDU
-    LDDICT
-    16 LDU
-    ENDS
-    s3 s5 PUXC
-    authenticate_message CALLDICT
-    SWAP
     POW2
     SWAP
     32 LDU
     32 LDU
-    8 LDU
-    LDREF
-    8 LDU
-    ENDS
-    DUP
-    1 EQINT
-    IF:<{
-      s5 PUSH
-    }>ELSE<{
-      0 PUSHINT
-    }>
-    OVER
-    2 EQINT
-    IF:<{
-    }>ELSE<{
-      s6 POP
-      0 PUSHINT
-      s0 s6 XCHG
-    }>
     NOW
-    s1 s6 XCHG
+    s1 s3 XCHG
     GREATER
-    35 THROWIFNOT
-    s3 s9 PUSH2
-    GEQ
     33 THROWIFNOT
-    s9 s10 PUSH2
-    ADD
-    s4 s(-1) PUXC
-    LEQ
-    33 THROWIFNOT
-    DUP
-    1 EQINT
-    SWAP
-    2 EQINT
-    OR
-    37 THROWIFNOT
-    s5 s2 XCPU
-    ~orders_delete_get_order_slice CALLDICT
+    OVER
+    SEMPTY
     IF:<{
-      ~load_order CALLDICT
-      s0 s4 XCHG
-      ENDS
-      s5 s2 PUXC
-      NEQ
-      36 THROWIF
-      HASHCU
-      s8 PUSH
-      HASHCU
-      NEQ
-      36 THROWIF
-      s0 s5 PUSH2
+      NIP
+      s3 PUSH
+      EQUAL
+      34 THROWIFNOT
+      s6 s0 PUSH2
       AND
-      36 THROWIF
-      s1 s6 PUSH2
-      AND
-      36 THROWIF
-      s1 s5 XCHG
+      37 THROWIF
+      ACCEPT
+      s1 s6 XCHG
       OR
-      s5 s4 XCHG2
-      OR
+      DUP
+      uint_bitcount CALLDICT
+      s4 PUSH
+      GEQ
+      IF:<{
+        DROP
+        s4 POP
+        DUP
+        INC
+        s1 s4 XCHG
+        ADD
+        NEWDICT
+        0 PUSHINT
+      }>ELSE<{
+        s1 s5 s0 XCHG3
+      }>
     }>ELSE<{
-      s1 s5 XCHG
+      s0 s4 PUSH2
+      GEQ
+      34 THROWIFNOT
+      s4 s5 PUSH2
+      ADD
+      s1 s(-1) PUXC
+      LEQ
+      34 THROWIFNOT
+      s0 s1 PUXC
+      8 LDU
+      LDREF
       DROP
+      s2 s5 XCHG2
+      32 PUSHINT
+      DICTUDELGET
+      NULLSWAPIFNOT
+      IF:<{
+        8 LDU
+        LDREF
+        DUP
+        SBITS
+        LDUX
+        ENDS
+        s2 s4 XCPU
+        NEQ
+        38 THROWIF
+        HASHCU
+        s6 PUSH
+        HASHCU
+        NEQ
+        38 THROWIF
+        s0 s4 PUSH2
+        AND
+        37 THROWIF
+        s1 s4 XCHG
+        OR
+      }>ELSE<{
+        s1 s4 XCHG
+        DROP
+      }>
+      ACCEPT
+      s2 s5 PUSH2
+      EQUAL
+      IF:<{
+        UNTIL:<{
+          FALSE
+          OVER
+          uint_bitcount CALLDICT
+          s9 PUSH
+          GEQ
+          IF:<{
+            DROP
+            s5 POP
+            s3 s0 PUSH2
+            SENDRAWMSG
+            SWAP
+            INC
+            DUP
+            32 PUSHINT
+            s2 s4 s4 PUXC2
+            DICTUDELGET
+            NULLSWAPIFNOT
+            DUP
+            IF:<{
+              s4 POP
+              s5 POP
+              s5 POP
+              s0 s3 XCHG
+              8 LDU
+              LDREF
+              DUP
+              SBITS
+              LDUX
+              ENDS
+            }>ELSE<{
+              s2 s7 XCHG
+              s3 s6 XCHG
+              4 -ROLL
+              DROP
+            }>
+          }>ELSE<{
+            s4 s6 XCHG
+            s4 s5 XCHG
+            s3 s4 XCHG
+            s3 s3 XCHG2
+          }>
+          s0 s3 XCHG
+          NOT
+          s5 s6 XCHG
+          s1 s5 XCHG
+          s1 s4 XCHG
+          s1 s3 XCHG
+        }>
+      }>
+      DUP
+      uint_bitcount CALLDICT
+      s8 PUSH
+      LESS
+      IF:<{
+        NEWC
+        s1 s2 XCHG
+        8 STU
+        s1 s4 XCHG
+        STREF
+        s3 PUSH
+        UBITSIZE
+        s2 s4 XCHG
+        STUX
+        -ROT
+        32 PUSHINT
+        DICTUSETB
+      }>ELSE<{
+        s3 s4 XCHG
+        4 BLKDROP
+      }>
+      s1 s0 s5 XCHG3
     }>
-    ACCEPT
+    DUP
+    UBITSIZE
     NEWC
-    s3 s1 s4 XCHG3
-    s2 s6 XCHG
-    SWAP
-    store_order CALLDICT
-    s1 s2 XCHG
-    ~orders_set_order_builder CALLDICT
-    s0 s3 s3 XC2PU
-    ~orders_execute CALLDICT
-    NEWC
-    32 STU
-    s1 s2 XCHG
+    s1 s6 XCHG
     STDICT
-    s1 s2 XCHG
+    s1 s4 XCHG
     8 STU
-    STDICT
+    s1 s5 XCHG
     16 STU
+    32 STU
+    s1 s3 XCHG
+    STDICT
+    ROT
+    STUX
     ENDC
     c4 POP
   }>
