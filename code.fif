@@ -110,7 +110,7 @@ PROGRAM{
       s0 s1 PUXC
       8 LDU
       LDREF
-      DROP
+      ENDS
       s2 s5 XCHG2
       32 PUSHINT
       DICTUDELGET
@@ -193,10 +193,13 @@ PROGRAM{
           s1 s3 XCHG
         }>
       }>
-      DUP
+      s2 s5 PUSH2
+      NEQ
+      OVER
       uint_bitcount CALLDICT
-      s8 PUSH
+      s9 PUSH
       LESS
+      OR
       IF:<{
         NEWC
         s1 s2 XCHG

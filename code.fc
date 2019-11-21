@@ -42,11 +42,11 @@ int uint_bitcount(int x) {
 
 	var public_key_mask = 1 << slot_slice.preload_uint(8);
 	var (valid_until, seqno) = (in_msg~load_uint(32), in_msg~load_uint(32));
-	var out = in_msg;
+	var out_slice = in_msg;
 
 	throw_unless(33, valid_until > now());
 
-	if (slice_empty?(out)) {
+	if (slice_empty?(out_slice)) {
 		throw_unless(34, seqno == current_seqno);
 		throw_if(37, reset_cfrm & public_key_mask);
 
@@ -65,8 +65,9 @@ int uint_bitcount(int x) {
 
 		var order_seqno = seqno;
 		var order_cfrm = public_key_mask;
-		var order_out_mode = out~load_uint(8);
-		var order_out_msg = out~load_ref();
+		var order_out_mode = out_slice~load_uint(8);
+		var order_out_msg = out_slice~load_ref();
+		out_slice.end_parse();
 
 		var (stored_order_slice, stored_order_found) =
 			orders~udict_delete_get?(32, seqno);
@@ -107,7 +108,7 @@ int uint_bitcount(int x) {
 			} until (~ next_order_found);
 		}
 
-		if (uint_bitcount(order_cfrm) < k) {
+		if ((order_seqno != current_seqno) | (uint_bitcount(order_cfrm) < k)) {
 			orders~udict_set_builder(32, order_seqno, begin_cell()
 				.store_uint(order_out_mode, 8)
 				.store_ref(order_out_msg)
