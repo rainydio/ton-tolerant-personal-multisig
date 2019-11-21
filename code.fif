@@ -89,10 +89,9 @@ PROGRAM{
       IF:<{
         DROP
         s4 POP
-        DUP
-        INC
-        s1 s4 XCHG
+        s3 s3 XCPU
         ADD
+        INC
         NEWDICT
         0 PUSHINT
       }>ELSE<{
@@ -152,8 +151,10 @@ PROGRAM{
         IF:<{
           DROP
           s5 POP
-          s3 s0 PUSH2
+          s8 POP
+          s2 s7 PUSH2
           SENDRAWMSG
+          0 PUSHINT
           SWAP
           INC
           DUP
@@ -163,10 +164,10 @@ PROGRAM{
           NULLSWAPIFNOT
           DUP
           IF:<{
-            s4 POP
-            s5 POP
-            s5 POP
-            s0 s3 XCHG
+            s6 POP
+            s6 POP
+            s9 POP
+            s0 s4 XCHG
             8 LDU
             LDREF
             DUP
@@ -174,9 +175,10 @@ PROGRAM{
             LDUX
             ENDS
           }>ELSE<{
-            s2 s7 XCHG
-            s3 s6 XCHG
-            4 -ROLL
+            s2 s11 XCHG
+            s3 s7 XCHG
+            s3 s1 s6 XCHG3
+            -ROT
             DROP
           }>
         }>ELSE<{
@@ -193,17 +195,16 @@ PROGRAM{
           32 PUSHINT
           s5 s6 s6 PUXC2
           DICTUSETB
-          s0 s6 XCHG
-          s0 s5 XCHG
+          s0 s10 XCHG
+          s4 s5 XCHG
           s3 s4 XCHG
-          SWAP
+          s3 s3 XCHG2
         }>
-        s0 s3 XCHG
+        s0 s5 XCHG
         NOT
-        s5 s6 XCHG
+        s3 s10 XCHG
         s1 s5 XCHG
-        s1 s4 XCHG
-        s1 s3 XCHG
+        s3 s4 XCHG
       }>
       s3 s4 XCHG
       4 BLKDROP
