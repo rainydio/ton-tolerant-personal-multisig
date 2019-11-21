@@ -88,33 +88,30 @@ int uint_bitcount(int x) {
 
 		accept_message();
 
-		if (order_seqno == current_seqno) {
-			do {
-				var next_order_found = false;
-				if (uint_bitcount(order_cfrm) >= k) {
-					send_raw_message(order_out_msg, order_out_mode);
-
-					current_seqno = order_seqno = order_seqno + 1;
-					(stored_order_slice, next_order_found) =
-						orders~udict_delete_get?(32, current_seqno);
-					if (next_order_found) {
-						(order_out_mode, order_out_msg, order_cfrm) = (
-							stored_order_slice~load_uint(8),
-							stored_order_slice~load_ref(),
-							stored_order_slice~load_uint(slice_bits(stored_order_slice))
-						); stored_order_slice.end_parse();
-					}
+		do {
+			var next_order_found = false;
+			
+			if ((order_seqno == current_seqno) & (uint_bitcount(order_cfrm) >= k)) {
+				send_raw_message(order_out_msg, order_out_mode);
+				current_seqno = order_seqno = order_seqno + 1;
+				(stored_order_slice, next_order_found) = orders~udict_delete_get?(32, order_seqno);
+				
+				if (next_order_found) {
+					(order_out_mode, order_out_msg, order_cfrm) = (
+						stored_order_slice~load_uint(8),
+						stored_order_slice~load_ref(),
+						stored_order_slice~load_uint(slice_bits(stored_order_slice))
+					); stored_order_slice.end_parse();
 				}
-			} until (~ next_order_found);
-		}
-
-		if ((order_seqno != current_seqno) | (uint_bitcount(order_cfrm) < k)) {
-			orders~udict_set_builder(32, order_seqno, begin_cell()
-				.store_uint(order_out_mode, 8)
-				.store_ref(order_out_msg)
-				.store_uint(order_cfrm, uint_bitsize(order_cfrm))
-			);
-		}
+			}
+			else {
+				orders~udict_set_builder(32, order_seqno, begin_cell()
+					.store_uint(order_out_mode, 8)
+					.store_ref(order_out_msg)
+					.store_uint(order_cfrm, uint_bitsize(order_cfrm))
+				);
+			}
+		} until (~ next_order_found);
 	}
 
 	set_data(begin_cell()

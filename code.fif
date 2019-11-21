@@ -140,83 +140,73 @@ PROGRAM{
         DROP
       }>
       ACCEPT
-      s2 s5 PUSH2
-      EQUAL
-      IF:<{
-        UNTIL:<{
-          FALSE
-          OVER
-          uint_bitcount CALLDICT
-          s9 PUSH
-          GEQ
+      UNTIL:<{
+        FALSE
+        s3 s6 PUSH2
+        EQUAL
+        s2 PUSH
+        uint_bitcount CALLDICT
+        s10 PUSH
+        GEQ
+        AND
+        IF:<{
+          DROP
+          s5 POP
+          s3 s0 PUSH2
+          SENDRAWMSG
+          SWAP
+          INC
+          DUP
+          32 PUSHINT
+          s1 s4 s4 PUXC2
+          DICTUDELGET
+          NULLSWAPIFNOT
+          DUP
           IF:<{
-            DROP
+            s4 POP
             s5 POP
-            s3 s0 PUSH2
-            SENDRAWMSG
-            SWAP
-            INC
+            s5 POP
+            s0 s3 XCHG
+            8 LDU
+            LDREF
             DUP
-            32 PUSHINT
-            s2 s4 s4 PUXC2
-            DICTUDELGET
-            NULLSWAPIFNOT
-            DUP
-            IF:<{
-              s4 POP
-              s5 POP
-              s5 POP
-              s0 s3 XCHG
-              8 LDU
-              LDREF
-              DUP
-              SBITS
-              LDUX
-              ENDS
-            }>ELSE<{
-              s2 s7 XCHG
-              s3 s6 XCHG
-              4 -ROLL
-              DROP
-            }>
+            SBITS
+            LDUX
+            ENDS
           }>ELSE<{
-            s4 s6 XCHG
-            s4 s5 XCHG
-            s3 s4 XCHG
-            s3 s3 XCHG2
+            s2 s7 XCHG
+            s3 s6 XCHG
+            4 -ROLL
+            DROP
           }>
-          s0 s3 XCHG
-          NOT
-          s5 s6 XCHG
-          s1 s5 XCHG
-          s1 s4 XCHG
-          s1 s3 XCHG
+        }>ELSE<{
+          s2 PUSH
+          NEWC
+          8 STU
+          s6 s(-1) PUXC
+          STREF
+          s2 PUSH
+          UBITSIZE
+          s3 s(-1) s(-1) PUXC2
+          STUX
+          SWAP
+          32 PUSHINT
+          s5 s6 s6 PUXC2
+          DICTUSETB
+          s0 s6 XCHG
+          s0 s5 XCHG
+          s3 s4 XCHG
+          SWAP
         }>
-      }>
-      s2 s5 PUSH2
-      NEQ
-      OVER
-      uint_bitcount CALLDICT
-      s9 PUSH
-      LESS
-      OR
-      IF:<{
-        NEWC
-        s1 s2 XCHG
-        8 STU
+        s0 s3 XCHG
+        NOT
+        s5 s6 XCHG
+        s1 s5 XCHG
         s1 s4 XCHG
-        STREF
-        s3 PUSH
-        UBITSIZE
-        s2 s4 XCHG
-        STUX
-        -ROT
-        32 PUSHINT
-        DICTUSETB
-      }>ELSE<{
-        s3 s4 XCHG
-        4 BLKDROP
+        s1 s3 XCHG
       }>
+      s3 s4 XCHG
+      4 BLKDROP
       s1 s0 s5 XCHG3
     }>
     DUP
