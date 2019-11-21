@@ -31,7 +31,6 @@ int uint_bitcount(int x) {
 	); auth_slice.end_parse();
 
 	var (slot_slice, public_key_found) = keys.udict_get?(256, public_key);
-
 	var signed_body = begin_cell()
 		.store_slice(my_address())
 		.store_slice(in_msg)
@@ -54,7 +53,7 @@ int uint_bitcount(int x) {
 
 		reset_cfrm |= public_key_mask;
 		if (uint_bitcount(reset_cfrm) >= k) {
-			current_seqno += tolerance + 1;
+			current_seqno = current_seqno + tolerance + 1;
 			orders = new_dict();
 			reset_cfrm = 0;
 		}
@@ -93,8 +92,11 @@ int uint_bitcount(int x) {
 			
 			if ((order_seqno == current_seqno) & (uint_bitcount(order_cfrm) >= k)) {
 				send_raw_message(order_out_msg, order_out_mode);
+				reset_cfrm = 0;
 				current_seqno = order_seqno = order_seqno + 1;
-				(stored_order_slice, next_order_found) = orders~udict_delete_get?(32, order_seqno);
+				
+				(stored_order_slice, next_order_found) =
+					orders~udict_delete_get?(32, order_seqno);
 				
 				if (next_order_found) {
 					(order_out_mode, order_out_msg, order_cfrm) = (
