@@ -14,7 +14,7 @@ constant pubkeys
 	32 pubkeys contract-data
 constant data
 
-	<{ SETCP0 ACCEPT "ContractCode.fif" include PUSHREF SETCODE }>c
+	<{ SETCP0 ACCEPT "code.fif" include PUSHREF SETCODE }>c
 constant code
 
 	<b b{0011} s, code ref, data ref, dictnew dict, b>
