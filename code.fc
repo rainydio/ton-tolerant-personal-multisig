@@ -64,9 +64,9 @@ int uint_bitcount(int x) {
 		throw_unless(34, seqno <= current_seqno + tolerance);
 
 		var order_seqno = seqno;
-		var order_cfrm = public_key_mask;
 		var order_out_mode = out_slice~load_uint(8);
 		var order_out_msg = out_slice~load_ref();
+		var order_cfrm = public_key_mask;
 		out_slice.end_parse();
 
 		var (stored_order_slice, stored_order_found) =
